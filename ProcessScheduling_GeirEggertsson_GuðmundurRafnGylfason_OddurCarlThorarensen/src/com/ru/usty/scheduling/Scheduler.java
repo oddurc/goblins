@@ -1,7 +1,6 @@
 package com.ru.usty.scheduling;
 
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.*;
 
 import com.ru.usty.scheduling.process.ProcessExecution;
 import com.ru.usty.scheduling.process.ProcessInfo;
@@ -24,6 +23,7 @@ public class Scheduler {
 	boolean processRunning = false;
 
 	Queue<Integer> processQueue;
+	ArrayList<Integer> processList;
 
 	/**
 	 * Add any objects and variables here (if needed)
@@ -63,7 +63,7 @@ public class Scheduler {
 			break;
 		case RR:	//Round robin
 			System.out.println("WT: " + (SD_FCFS.WT/SD_FCFS.processCount) + " - TAT: " + (SD_FCFS.TAT/SD_FCFS.processCount) );
-			processQueue = new LinkedList<Integer>();
+			processList = new ArrayList<Integer>();
 			
 			System.out.println("Starting new scheduling task: Round robin, quantum = " + quantum);
 			/**
@@ -122,7 +122,8 @@ public class Scheduler {
 			 */
 			break;
 		case RR:	//Round robin
-			
+			processList.add(processID);
+			processExecution.switchToProcess(processID);
 			/**
 			 * Add your policy specific initialization code here (if needed)
 			 */
@@ -168,7 +169,7 @@ public class Scheduler {
 			processQueue.remove();
 			
 			//processHandler = new ProcessHandler();
-			//processInfo = processExecution.getProcessInfo(processID); 
+			//processInfo = processExecution.getProcessInfo(lastProcess); 
 			
 			SD_FCFS.WT = SD_FCFS.WT + processInfo.elapsedWaitingTime;
 			SD_FCFS.TAT = SD_FCFS.TAT + processInfo.elapsedExecutionTime;
@@ -186,6 +187,11 @@ public class Scheduler {
 			break;
 		case RR:	//Round robin
 			
+			processList.remove(processList.indexOf(processID));
+
+			if(!processList.isEmpty()) {
+				processExecution.switchToProcess((int)processList.get(0));
+			}
 			/**
 			 * Add your policy specific initialization code here (if needed)
 			 */
