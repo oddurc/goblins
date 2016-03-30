@@ -17,13 +17,13 @@ public class Scheduler {
 	ProcessHandler processHandler;
 	Policy policy;
 	int quantum;
-	int RR_Index;
+	//int RR_Index;
 	
 	ScheduleData SD_FCFS;
 	
 	int nextProcess;
 	
-	int RR_runningProcess = 0;
+	int RR_runningProcess;
 	
 	long schStart, schFinish;
 	Timer timer;
@@ -73,7 +73,7 @@ public class Scheduler {
 		case RR:	//Round robin
 			//System.out.println("WT: " + (SD_FCFS.WT/SD_FCFS.processCount) + " - TAT: " + (SD_FCFS.TAT/SD_FCFS.processCount) );
 
-			RR_Index = 0;
+			//RR_Index = 0;
 			processList = new LinkedList<Integer>();
 			
 			System.out.println("Starting new scheduling task: Round robin, quantum = " + quantum);
@@ -270,12 +270,14 @@ public class Scheduler {
 			
 			break;
 		case RR:	//Round robin
-			processList.remove(processList.indexOf(processID));
+			processList.remove(processID);
+			
+			RR_runningProcess = processList.lastIndexOf(processID+1);
 			
 			processRunning = false;
 			
 			if(!processList.isEmpty()) {
-				RR_SwitchToProcess(processID);
+				RR_SwitchToProcess(RR_runningProcess);
 			}
 			
 			/**
@@ -350,16 +352,15 @@ public class Scheduler {
 							Thread.sleep(quantum);
 						}
 								
-						if(processList.indexOf(RR_runningProcess) == processList.getLast()){
-							RR_runningProcess = 0;
+						if(RR_runningProcess == processList.indexOf(processList.getLast())){
+							processRunning=true;
+							RR_runningProcess = processList.indexOf(processList.getFirst());
 						    processExecution.switchToProcess(RR_runningProcess);
-						    processRunning=true;
 						    Thread.sleep(quantum);
 						}
 						else{
-							RR_runningProcess++;
-							processExecution.switchToProcess(processList.indexOf(RR_runningProcess));
 							processRunning=true;
+							processExecution.switchToProcess(RR_runningProcess);
 							Thread.sleep(quantum);
 						}
 					} 
