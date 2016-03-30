@@ -1,6 +1,7 @@
 package com.ru.usty.scheduling;
 
 import java.util.*;
+import java.lang.Math;
 
 import com.ru.usty.scheduling.process.ProcessExecution;
 import com.ru.usty.scheduling.process.ProcessInfo;
@@ -104,6 +105,10 @@ public class Scheduler {
 			break;
 		case HRRN:	//Highest response ratio next
 			System.out.println("Starting new scheduling task: Highest response ratio next");
+			
+			Comparator<ProcessData> comparatorResponseRatio = new ProcessResponseRatioComparator();
+			prioQ = new PriorityQueue<ProcessData>(comparatorResponseRatio);
+			processRunning = false;
 			/**
 			 * Add your policy specific initialization code here (if needed)
 			 */
@@ -150,7 +155,7 @@ public class Scheduler {
 			break;
 		case SPN:	//Shortest process next
 			processInfo = processExecution.getProcessInfo(processID);
-			prioQ.add(new ProcessData(processID, processInfo.totalServiceTime, (processInfo.totalServiceTime-processInfo.elapsedExecutionTime)));
+			prioQ.add(new ProcessData(processID, processInfo.totalServiceTime, (processInfo.totalServiceTime-processInfo.elapsedExecutionTime), processInfo.totalServiceTime));
 			if (!processRunning) {
 				int ID = prioQ.element().processID;
 				runningProcessInfo = processExecution.getProcessInfo(ID);
@@ -164,14 +169,11 @@ public class Scheduler {
 			break;
 		case SRT:	//Shortest remaining time
 			processInfo = processExecution.getProcessInfo(processID);
-			prioQ.add(new ProcessData(processID, processInfo.totalServiceTime, (processInfo.totalServiceTime-processInfo.elapsedExecutionTime)));
+			prioQ.add(new ProcessData(processID, processInfo.totalServiceTime, (processInfo.totalServiceTime-processInfo.elapsedExecutionTime), processInfo.totalServiceTime));
 			if (!processRunning) {
 				int ID = prioQ.element().processID;
 				runningProcessInfo = processExecution.getProcessInfo(ID);
-				runningProcessID = ID;
-				
-				// Bæta við timer sem er startað hér, tekur tímann hversu lengi þessi process keyrir
-				
+				runningProcessID = ID;			
 				processExecution.switchToProcess(ID);
 				processRunning = true;
 			}
@@ -185,19 +187,44 @@ public class Scheduler {
 					processRunning = true;
 					
 					// Vil þá taka gamla processinn úr queue og setja hann aftur inn með annan runtime (þeas núverandi remaining time)
-					prioQ.remove(new ProcessData(runningProcessID, runningProcessInfo.totalServiceTime, remTime)); // remTime hér hefur engin áhrif á remove virknina
-					prioQ.add(new ProcessData(runningProcessID, runningProcessInfo.totalServiceTime, remTime));
+					prioQ.remove(new ProcessData(runningProcessID, runningProcessInfo.totalServiceTime, remTime, remTime)); // remTime hér hefur engin áhrif á remove virknina
+					prioQ.add(new ProcessData(runningProcessID, runningProcessInfo.totalServiceTime, remTime, remTime));
 					
 					runningProcessID = processID;
 				}
 			}
 						
-			
 			/**
 			 * Add your policy specific initialization code here (if needed)
 			 */
 			break;
 		case HRRN:	//Highest response ratio next
+			LinkedList<Integer> temp = new LinkedList<Integer>();
+			while (!prioQ.isEmpty()) {
+				int id = prioQ.element().processID;
+				temp.add(id);
+				processInfo = processExecution.getProcessInfo(id);
+				prioQ.remove(new ProcessData(id, processInfo.totalServiceTime, processInfo.elapsedWaitingTime, processInfo.totalServiceTime));
+			}
+			
+			while (!temp.isEmpty()) {
+				int id = temp.element();
+				processInfo = processExecution.getProcessInfo(id);
+				long rRatio = ((processInfo.elapsedWaitingTime-processInfo.totalServiceTime)/processInfo.totalServiceTime);
+				prioQ.add(new ProcessData(id, processInfo.totalServiceTime, (processInfo.totalServiceTime-processInfo.elapsedExecutionTime), rRatio));
+				temp.remove(0);
+			}
+			
+			processInfo = processExecution.getProcessInfo(processID);
+			long rRatio = ((processInfo.elapsedWaitingTime-processInfo.totalServiceTime)/processInfo.totalServiceTime);
+			prioQ.add(new ProcessData(processID, processInfo.totalServiceTime, (processInfo.totalServiceTime-processInfo.elapsedExecutionTime), rRatio));
+			
+			int ID = prioQ.element().processID;
+			runningProcessInfo = processExecution.getProcessInfo(ID);
+			runningProcessID = ID;			
+			processExecution.switchToProcess(ID);
+			processRunning = true;	
+			
 			
 			/**
 			 * Add your policy specific initialization code here (if needed)
@@ -258,7 +285,7 @@ public class Scheduler {
 		case SPN:	//Shortest process next
 			processRunning = false;
 			//processInfo = processExecution.getProcessInfo(processID);
-			prioQ.remove(new ProcessData(processID, runningProcessInfo.totalServiceTime, runningProcessInfo.elapsedWaitingTime));
+			prioQ.remove(new ProcessData(processID, runningProcessInfo.totalServiceTime, runningProcessInfo.elapsedWaitingTime, runningProcessInfo.totalServiceTime));
 			
 			if (!prioQ.isEmpty()) {
 				int ID = prioQ.element().processID;
@@ -273,7 +300,7 @@ public class Scheduler {
 			break;
 		case SRT:	//Shortest remaining time
 			processRunning = false;
-			prioQ.remove(new ProcessData(processID, runningProcessInfo.totalServiceTime, runningProcessInfo.elapsedWaitingTime));
+			prioQ.remove(new ProcessData(processID, runningProcessInfo.totalServiceTime, runningProcessInfo.elapsedWaitingTime, runningProcessInfo.totalServiceTime));
 			if (!prioQ.isEmpty()) {
 				int ID = prioQ.element().processID;
 				runningProcessInfo = processExecution.getProcessInfo(ID);
@@ -287,6 +314,15 @@ public class Scheduler {
 			 */
 			break;
 		case HRRN:	//Highest response ratio next
+			processRunning = false;
+			prioQ.remove(new ProcessData(processID, runningProcessInfo.totalServiceTime, runningProcessInfo.elapsedWaitingTime, runningProcessInfo.totalServiceTime));
+			if (!prioQ.isEmpty()) {
+				int ID = prioQ.element().processID;
+				runningProcessInfo = processExecution.getProcessInfo(ID);
+				runningProcessID = ID;
+				processExecution.switchToProcess(ID);
+				processRunning = true;
+			}
 			
 			/**
 			 * Add your policy specific initialization code here (if needed)
