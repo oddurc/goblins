@@ -8,25 +8,28 @@ import com.ru.usty.scheduling.process.ProcessHandler;
 
 public class Scheduler {
 
-	ProcessExecution processExecution;
+	public ProcessExecution processExecution;
 	ProcessInfo processInfo;
 	ProcessInfo runningProcessInfo;
+	int runningProcessID;
+	
 	ProcessHandler processHandler;
 	Policy policy;
 	int quantum;
+	int RR_Index;
 	
 	ScheduleData SD_FCFS;
 	
 	int nextProcess;
 	
 	long schStart, schFinish;
-	
+	Timer timer;
+	TimerTask timerTask;
 	boolean processRunning = false;
 
 	Queue<Integer> processQueue;
 	ArrayList<Integer> processList;
 	PriorityQueue<ProcessData> prioQ;
-	
 
 	/**
 	 * Add any objects and variables here (if needed)
@@ -67,8 +70,9 @@ public class Scheduler {
 			 */
 			break;
 		case RR:	//Round robin
-			System.out.println("WT: " + (SD_FCFS.WT/SD_FCFS.processCount) + " - TAT: " + (SD_FCFS.TAT/SD_FCFS.processCount) );
-			processList = new ArrayList<Integer>();
+			//System.out.println("WT: " + (SD_FCFS.WT/SD_FCFS.processCount) + " - TAT: " + (SD_FCFS.TAT/SD_FCFS.processCount) );
+			processList = new ArrayList<Integer>(); 
+			RR_Index = 0;
 			
 			System.out.println("Starting new scheduling task: Round robin, quantum = " + quantum);
 			/**
@@ -78,8 +82,8 @@ public class Scheduler {
 		case SPN:	//Shortest process next
 			System.out.println("Starting new scheduling task: Shortest process next");
 			
-			Comparator<ProcessData> comparator = new ProcessRunTimeComparator();
-			prioQ = new PriorityQueue<ProcessData>(comparator);
+			Comparator<ProcessData> comparatorRunTime = new ProcessRunTimeComparator();
+			prioQ = new PriorityQueue<ProcessData>(comparatorRunTime);
 			processRunning = false;
 			
 			/**
@@ -88,6 +92,11 @@ public class Scheduler {
 			break;
 		case SRT:	//Shortest remaining time
 			System.out.println("Starting new scheduling task: Shortest remaining time");
+			
+			Comparator<ProcessData> comparatorRemTime = new ProcessRemainingTimeComparator();
+			prioQ = new PriorityQueue<ProcessData>(comparatorRemTime);
+			processRunning = false;
+			
 			/**
 			 * Add your policy specific initialization code here (if needed)
 			 */
@@ -127,20 +136,13 @@ public class Scheduler {
 				processExecution.switchToProcess(processID);
 				processRunning = true;
 			}
-			/**
-			 * Add your policy specific initialization code here (if needed)
-			 */
 			break;
 		case RR:	//Round robin
-			processList.add(processID);
-			processExecution.switchToProcess(processID);
-			/**
-			 * Add your policy specific initialization code here (if needed)
-			 */
+
 			break;
 		case SPN:	//Shortest process next
 			processInfo = processExecution.getProcessInfo(processID);
-			prioQ.add(new ProcessData(processID, processInfo.totalServiceTime));
+			prioQ.add(new ProcessData(processID, processInfo.totalServiceTime, (processInfo.totalServiceTime-processInfo.elapsedExecutionTime)));
 			if (!processRunning) {
 				int ID = prioQ.element().processID;
 				runningProcessInfo = processExecution.getProcessInfo(ID);
@@ -153,6 +155,35 @@ public class Scheduler {
 			 */
 			break;
 		case SRT:	//Shortest remaining time
+			processInfo = processExecution.getProcessInfo(processID);
+			prioQ.add(new ProcessData(processID, processInfo.totalServiceTime, (processInfo.totalServiceTime-processInfo.elapsedExecutionTime)));
+			if (!processRunning) {
+				int ID = prioQ.element().processID;
+				runningProcessInfo = processExecution.getProcessInfo(ID);
+				runningProcessID = ID;
+				
+				// Bæta við timer sem er startað hér, tekur tímann hversu lengi þessi process keyrir
+				
+				processExecution.switchToProcess(ID);
+				processRunning = true;
+			}
+			else {
+				ProcessInfo pi = processExecution.getProcessInfo(runningProcessID);
+				long remTime = pi.totalServiceTime - pi.elapsedExecutionTime;
+				
+				if (remTime > processInfo.totalServiceTime) { // Ef remaining time á nýja process er minni en á núverandi process
+					runningProcessInfo = processExecution.getProcessInfo(processID); // Þá skiptum við yfir á nýja
+					processExecution.switchToProcess(processID);
+					processRunning = true;
+					
+					// Vil þá taka gamla processinn úr queue og setja hann aftur inn með annan runtime (þeas núverandi remaining time)
+					prioQ.remove(new ProcessData(runningProcessID, runningProcessInfo.totalServiceTime, remTime)); // remTime hér hefur engin áhrif á remove virknina
+					prioQ.add(new ProcessData(runningProcessID, runningProcessInfo.totalServiceTime, remTime));
+					
+					runningProcessID = processID;
+				}
+			}
+						
 			
 			/**
 			 * Add your policy specific initialization code here (if needed)
@@ -207,9 +238,9 @@ public class Scheduler {
 			
 			processList.remove(processList.indexOf(processID));
 
-			if(!processList.isEmpty()) {
-				processExecution.switchToProcess((int)processList.get(0));
-			}
+//			if(!processList.isEmpty()) {
+//				processExecution.switchToProcess((int)processList.get(0));
+//			}
 			/**
 			 * Add your policy specific initialization code here (if needed)
 			 */
@@ -217,11 +248,12 @@ public class Scheduler {
 		case SPN:	//Shortest process next
 			processRunning = false;
 			//processInfo = processExecution.getProcessInfo(processID);
-			prioQ.remove(new ProcessData(processID, runningProcessInfo.totalServiceTime));
+			prioQ.remove(new ProcessData(processID, runningProcessInfo.totalServiceTime, runningProcessInfo.elapsedWaitingTime));
 			
 			if (!prioQ.isEmpty()) {
 				int ID = prioQ.element().processID;
 				runningProcessInfo = processExecution.getProcessInfo(ID);
+				runningProcessID = ID;
 				processExecution.switchToProcess(ID);
 				processRunning = true;
 			}
@@ -230,6 +262,15 @@ public class Scheduler {
 			 */
 			break;
 		case SRT:	//Shortest remaining time
+			processRunning = false;
+			prioQ.remove(new ProcessData(processID, runningProcessInfo.totalServiceTime, runningProcessInfo.elapsedWaitingTime));
+			if (!prioQ.isEmpty()) {
+				int ID = prioQ.element().processID;
+				runningProcessInfo = processExecution.getProcessInfo(ID);
+				runningProcessID = ID;
+				processExecution.switchToProcess(ID);
+				processRunning = true;
+			}
 			
 			/**
 			 * Add your policy specific initialization code here (if needed)

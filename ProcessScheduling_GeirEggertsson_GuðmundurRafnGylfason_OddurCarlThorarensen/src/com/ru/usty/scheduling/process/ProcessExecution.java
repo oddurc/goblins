@@ -10,4 +10,5 @@ public interface ProcessExecution {
 
 	public ProcessInfo getProcessInfo(int processID);
 	public void switchToProcess(int processID);
+	public Process getProcess(int processID);
 }

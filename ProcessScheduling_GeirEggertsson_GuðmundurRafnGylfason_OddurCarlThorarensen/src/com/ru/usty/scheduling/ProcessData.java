@@ -3,10 +3,12 @@ package com.ru.usty.scheduling;
 public class ProcessData {
 	int processID;
 	long runTime;
+	long remainingTime;
 	
-	public ProcessData(int processID, long runTime) {
+	public ProcessData(int processID, long runTime, long remTime) {
 		this.processID = processID;
 		this.runTime = runTime;
+		this.remainingTime = remTime;
 	}
 
 	@Override
