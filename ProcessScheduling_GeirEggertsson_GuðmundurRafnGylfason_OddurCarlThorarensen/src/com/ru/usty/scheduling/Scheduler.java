@@ -14,13 +14,15 @@ public class Scheduler {
 	ProcessHandler processHandler;
 	Policy policy;
 	int quantum;
+	int RR_Index;
 	
 	ScheduleData SD_FCFS;
 	
 	int nextProcess;
 	
 	long schStart, schFinish;
-	
+	Timer timer;
+	TimerTask timerTask;
 	boolean processRunning = false;
 
 	Queue<Integer> processQueue;
@@ -67,8 +69,9 @@ public class Scheduler {
 			 */
 			break;
 		case RR:	//Round robin
-			System.out.println("WT: " + (SD_FCFS.WT/SD_FCFS.processCount) + " - TAT: " + (SD_FCFS.TAT/SD_FCFS.processCount) );
-			processList = new ArrayList<Integer>();
+			//System.out.println("WT: " + (SD_FCFS.WT/SD_FCFS.processCount) + " - TAT: " + (SD_FCFS.TAT/SD_FCFS.processCount) );
+			processList = new ArrayList<Integer>(); 
+			RR_Index = 0;
 			
 			System.out.println("Starting new scheduling task: Round robin, quantum = " + quantum);
 			/**
@@ -127,16 +130,18 @@ public class Scheduler {
 				processExecution.switchToProcess(processID);
 				processRunning = true;
 			}
-			/**
-			 * Add your policy specific initialization code here (if needed)
-			 */
 			break;
 		case RR:	//Round robin
 			processList.add(processID);
-			processExecution.switchToProcess(processID);
-			/**
-			 * Add your policy specific initialization code here (if needed)
-			 */
+			
+			if (!processRunning) {
+				timer = new Timer();
+				processExecution.switchToProcess(processID);
+				timer.schedule(new timerTask(), 0, quantum);
+			}
+			
+			//processExecution.switchToProcess(processID);
+
 			break;
 		case SPN:	//Shortest process next
 			processInfo = processExecution.getProcessInfo(processID);
@@ -207,9 +212,9 @@ public class Scheduler {
 			
 			processList.remove(processList.indexOf(processID));
 
-			if(!processList.isEmpty()) {
-				processExecution.switchToProcess((int)processList.get(0));
-			}
+//			if(!processList.isEmpty()) {
+//				processExecution.switchToProcess((int)processList.get(0));
+//			}
 			/**
 			 * Add your policy specific initialization code here (if needed)
 			 */
@@ -224,6 +229,8 @@ public class Scheduler {
 				runningProcessInfo = processExecution.getProcessInfo(ID);
 				processExecution.switchToProcess(ID);
 				processRunning = true;
+				
+				//prioQ.
 			}
 			/**
 			 * Add your policy specific initialization code here (if needed)
@@ -248,6 +255,26 @@ public class Scheduler {
 			 */
 			break;
 		}
+	}
+	
+	public class timerTask extends TimerTask  {
+		
+		Timer timer;
+		
+		public timerTask(Timer timer) {
+			this.timer = timer;
+		}
+		
+//		@Override
+//		public void run() []
+//		
+//		if (RR_Index >= processList.size()) {
+//			RR_Index = 0;
+//		}
+//		else RR_Index++;
+//		
+//		processExecution.switchToProcess(processList.get(RR_Index));
+		
 	}
 }
 
