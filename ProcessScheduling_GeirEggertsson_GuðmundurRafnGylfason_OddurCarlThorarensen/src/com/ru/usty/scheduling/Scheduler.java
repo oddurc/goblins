@@ -10,6 +10,7 @@ public class Scheduler {
 
 	ProcessExecution processExecution;
 	ProcessInfo processInfo;
+	ProcessInfo runningProcessInfo;
 	ProcessHandler processHandler;
 	Policy policy;
 	int quantum;
@@ -24,6 +25,8 @@ public class Scheduler {
 
 	Queue<Integer> processQueue;
 	ArrayList<Integer> processList;
+	PriorityQueue<ProcessData> prioQ;
+	
 
 	/**
 	 * Add any objects and variables here (if needed)
@@ -56,6 +59,8 @@ public class Scheduler {
 			processQueue = new LinkedList<Integer>();
 			SD_FCFS = new ScheduleData();
 			
+			
+			
 			System.out.println("Starting new scheduling task: First-come-first-served");
 			/**
 			 * Add your policy specific initialization code here (if needed)
@@ -72,6 +77,11 @@ public class Scheduler {
 			break;
 		case SPN:	//Shortest process next
 			System.out.println("Starting new scheduling task: Shortest process next");
+			
+			Comparator<ProcessData> comparator = new ProcessRunTimeComparator();
+			prioQ = new PriorityQueue<ProcessData>(comparator);
+			processRunning = false;
+			
 			/**
 			 * Add your policy specific initialization code here (if needed)
 			 */
@@ -129,6 +139,14 @@ public class Scheduler {
 			 */
 			break;
 		case SPN:	//Shortest process next
+			processInfo = processExecution.getProcessInfo(processID);
+			prioQ.add(new ProcessData(processID, processInfo.totalServiceTime));
+			if (!processRunning) {
+				int ID = prioQ.element().processID;
+				runningProcessInfo = processExecution.getProcessInfo(ID);
+				processExecution.switchToProcess(ID);
+				processRunning = true;
+			}
 			
 			/**
 			 * Add your policy specific initialization code here (if needed)
@@ -197,7 +215,16 @@ public class Scheduler {
 			 */
 			break;
 		case SPN:	//Shortest process next
+			processRunning = false;
+			//processInfo = processExecution.getProcessInfo(processID);
+			prioQ.remove(new ProcessData(processID, runningProcessInfo.totalServiceTime));
 			
+			if (!prioQ.isEmpty()) {
+				int ID = prioQ.element().processID;
+				runningProcessInfo = processExecution.getProcessInfo(ID);
+				processExecution.switchToProcess(ID);
+				processRunning = true;
+			}
 			/**
 			 * Add your policy specific initialization code here (if needed)
 			 */
@@ -223,3 +250,4 @@ public class Scheduler {
 		}
 	}
 }
+
