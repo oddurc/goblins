@@ -4,8 +4,9 @@ import java.util.*;
 
 public class ProcessRunTimeComparator implements Comparator<ProcessData> {
 	@Override
-	public int compare(ProcessData x, ProcessData y) { // Defining how to compare runtime between processes
-
+	public int compare(ProcessData x, ProcessData y) {
+		// TODO Auto-generated method stub
+		
 		if (x.runTime < y.runTime) {
 			return -1;
 		}
