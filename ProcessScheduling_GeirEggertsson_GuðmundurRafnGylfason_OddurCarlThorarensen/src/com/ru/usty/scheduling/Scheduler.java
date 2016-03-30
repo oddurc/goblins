@@ -22,13 +22,15 @@ public class Scheduler {
 	
 	int nextProcess;
 	
+	int RR_runningProcess = 0;
+	
 	long schStart, schFinish;
 	Timer timer;
 	TimerTask timerTask;
 	boolean processRunning = false;
 
 	Queue<Integer> processQueue;
-	ArrayList<Integer> processList;
+	LinkedList<Integer> processList;
 	PriorityQueue<ProcessData> prioQ;
 
 	/**
@@ -61,9 +63,7 @@ public class Scheduler {
 		case FCFS:	//First-come-first-served
 			processQueue = new LinkedList<Integer>();
 			SD_FCFS = new ScheduleData();
-			
-			
-			
+		
 			System.out.println("Starting new scheduling task: First-come-first-served");
 			/**
 			 * Add your policy specific initialization code here (if needed)
@@ -71,8 +71,9 @@ public class Scheduler {
 			break;
 		case RR:	//Round robin
 			//System.out.println("WT: " + (SD_FCFS.WT/SD_FCFS.processCount) + " - TAT: " + (SD_FCFS.TAT/SD_FCFS.processCount) );
-			processList = new ArrayList<Integer>(); 
+
 			RR_Index = 0;
+			processList = new LinkedList<Integer>();
 			
 			System.out.println("Starting new scheduling task: Round robin, quantum = " + quantum);
 			/**
@@ -139,6 +140,13 @@ public class Scheduler {
 			break;
 		case RR:	//Round robin
 
+			processList.add(processID);
+			
+			RR_SwitchToProcess(processID);	
+
+			/**
+			 * Add your policy specific initialization code here (if needed)
+			 */
 			break;
 		case SPN:	//Shortest process next
 			processInfo = processExecution.getProcessInfo(processID);
@@ -235,12 +243,14 @@ public class Scheduler {
 			
 			break;
 		case RR:	//Round robin
-			
 			processList.remove(processList.indexOf(processID));
-
-//			if(!processList.isEmpty()) {
-//				processExecution.switchToProcess((int)processList.get(0));
-//			}
+			
+			processRunning = false;
+			
+			if(!processList.isEmpty()) {
+				RR_SwitchToProcess(processID);
+			}
+			
 			/**
 			 * Add your policy specific initialization code here (if needed)
 			 */
@@ -289,6 +299,42 @@ public class Scheduler {
 			 */
 			break;
 		}
+	}
+
+	public void RR_SwitchToProcess(int processID){
+		RR_runningProcess = processList.indexOf(processID);
+		
+		Thread t = new Thread(){
+			public void run() {
+				while(true) {
+					try {
+						if(!processRunning){
+							processExecution.switchToProcess(RR_runningProcess);
+							processRunning = true;
+							Thread.sleep(quantum);
+						}
+								
+						if(processList.indexOf(RR_runningProcess) == processList.getLast()){
+							RR_runningProcess = 0;
+						    processExecution.switchToProcess(RR_runningProcess);
+						    processRunning=true;
+						    Thread.sleep(quantum);
+						}
+						else{
+							RR_runningProcess++;
+							processExecution.switchToProcess(processList.indexOf(RR_runningProcess));
+							processRunning=true;
+							Thread.sleep(quantum);
+						}
+					} 
+					catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			 }
+		};
+		t.start();		
 	}
 }
 
