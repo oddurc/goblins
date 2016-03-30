@@ -78,4 +78,9 @@ public class ProcessHandler implements ProcessExecution {
 			currentProcess.startRunning();
 		}
 	}
+	
+	public Process getProcess(int processID) {
+		Process process = processes.get(processID);
+		return process;
+	}
 }
