@@ -21,15 +21,19 @@ public class Scheduler implements Runnable {
 	ProcessHandler processHandler;
 	Policy policy;
 	int quantum;
+<<<<<<< HEAD
 	int quantumTime;
 	int RR_Index;
 	int currentRunningIndex;
+=======
+	//int RR_Index;
+>>>>>>> origin/master
 	
 	ScheduleData SD_FCFS;
 	
 	int nextProcess;
 	
-	int RR_runningProcess = 0;
+	int RR_runningProcess;
 	
 	long schStart, schFinish;
 	Timer timer;
@@ -109,6 +113,13 @@ public class Scheduler implements Runnable {
 			break;
 		case RR:	//Round robin
 			//System.out.println("WT: " + (SD_FCFS.WT/SD_FCFS.processCount) + " - TAT: " + (SD_FCFS.TAT/SD_FCFS.processCount) );
+<<<<<<< HEAD
+=======
+
+			//RR_Index = 0;
+			processList = new LinkedList<Integer>();
+			
+>>>>>>> origin/master
 			System.out.println("Starting new scheduling task: Round robin, quantum = " + quantum);
 //			RR_Index = 0;
 //			processList = new LinkedList<Integer>();
@@ -360,6 +371,7 @@ public class Scheduler implements Runnable {
 			
 			break;
 		case RR:	//Round robin
+<<<<<<< HEAD
 //			processList.remove(runningProcessID);
 //			processRunning = false;
 //			
@@ -385,6 +397,17 @@ public class Scheduler implements Runnable {
 //			else{
 //				noProcessRunning = true;
 //			}
+=======
+			processList.remove(processID);
+			
+			RR_runningProcess = processList.lastIndexOf(processID+1);
+			
+			processRunning = false;
+			
+			if(!processList.isEmpty()) {
+				RR_SwitchToProcess(RR_runningProcess);
+			}
+>>>>>>> origin/master
 			
 			/**
 			 * Add your policy specific initialization code here (if needed)
@@ -477,16 +500,15 @@ public class Scheduler implements Runnable {
 							Thread.sleep(quantum);
 						}
 								
-						if(processList.indexOf(RR_runningProcess) == processList.getLast()){
-							RR_runningProcess = 0;
+						if(RR_runningProcess == processList.indexOf(processList.getLast())){
+							processRunning=true;
+							RR_runningProcess = processList.indexOf(processList.getFirst());
 						    processExecution.switchToProcess(RR_runningProcess);
-						    processRunning=true;
 						    Thread.sleep(quantum);
 						}
 						else{
-							RR_runningProcess++;
-							processExecution.switchToProcess(processList.indexOf(RR_runningProcess));
 							processRunning=true;
+							processExecution.switchToProcess(RR_runningProcess);
 							Thread.sleep(quantum);
 						}
 					} 
