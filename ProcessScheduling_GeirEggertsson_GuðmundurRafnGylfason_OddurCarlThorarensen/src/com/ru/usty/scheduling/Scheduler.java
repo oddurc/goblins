@@ -141,7 +141,6 @@ public class Scheduler {
 		case RR:	//Round robin
 
 			processList.add(processID);
-			
 			RR_SwitchToProcess(processID);	
 
 			/**
